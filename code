@@ -1,0 +1,90 @@
+# Установка необходимых библиотек, если они еще не установлены
+!pip install scikit-learn matplotlib
+
+# Импорт необходимых библиотек для работы с данными, моделями и визуализацией
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import SGDRegressor
+from sklearn.metrics import mean_squared_error
+
+# Генерация первого набора данных (Dataset 1)
+np.random.seed(50)  # Фиксируем случайное состояние для воспроизводимости результатов
+x1 = np.linspace(0, 10, 100)  # Генерация 100 точек от 0 до 10
+y1 = 2 * x1 + 3 + np.random.normal(0, 1, 100)  # Зависимая переменная с шумом (линейная зависимость)
+
+# Генерация второго набора данных (Dataset 2)
+x2 = np.linspace(0, 10, 100)  # Генерация 100 точек от 0 до 10
+y2 = 3 * x2 - 1 + np.random.normal(0, 2, 100)  # Зависимая переменная с шумом (линейная зависимость)
+
+# Подготовка данных для модели (нормализация)
+X1 = x1.reshape(-1, 1)  # Преобразование x1 в двумерный массив (требование для моделей)
+X2 = x2.reshape(-1, 1)  # Преобразование x2 в двумерный массив (требование для моделей)
+
+# Нормализация данных первого набора
+scaler1 = StandardScaler()  # Создаем объект StandardScaler для нормализации
+X1_normalized = scaler1.fit_transform(X1)  # Применяем нормализацию к X1
+
+# Нормализация данных второго набора
+scaler2 = StandardScaler()  # Создаем еще один объект StandardScaler
+X2_normalized = scaler2.fit_transform(X2)  # Применяем нормализацию к X2
+
+# Определение параметров для подбора модели с помощью Grid Search
+param_grid = {
+    'alpha': [0.0001, 0.001, 0.01, 0.1],  # Параметр регуляризации (чем выше, тем сильнее штраф)
+    'max_iter': [100, 200, 500],          # Количество итераций (эпох) обучения
+    'learning_rate': ['constant', 'invscaling', 'adaptive'],  # Режим изменения скорости обучения
+    'eta0': [0.01, 0.1, 0.2]              # Начальное значение скорости обучения
+}
+
+# Поиск оптимальной модели для первого набора данных
+grid_search1 = GridSearchCV(SGDRegressor(), param_grid, cv=5, scoring='neg_mean_squared_error')  # Создание объекта GridSearchCV
+grid_search1.fit(X1_normalized, y1)  # Обучение модели на первом наборе данных
+
+# Поиск оптимальной модели для второго набора данных
+grid_search2 = GridSearchCV(SGDRegressor(), param_grid, cv=5, scoring='neg_mean_squared_error')  # Создание объекта GridSearchCV
+grid_search2.fit(X2_normalized, y2)  # Обучение модели на втором наборе данных
+
+# Вывод лучших параметров для каждой модели
+print(f'Лучшие параметры для Dataset 1: {grid_search1.best_params_}')  # Лучшие параметры для первого набора
+print(f'Лучшие параметры для Dataset 2: {grid_search2.best_params_}')  # Лучшие параметры для второго набора
+
+# Получение лучших моделей для обоих наборов данных
+best_model1 = grid_search1.best_estimator_  # Лучшая модель для первого набора
+best_model2 = grid_search2.best_estimator_  # Лучшая модель для второго набора
+
+# Предсказания на основе лучших моделей
+y1_pred = best_model1.predict(X1_normalized)  # Предсказания для первого набора данных
+y2_pred = best_model2.predict(X2_normalized)  # Предсказания для второго набора данных
+
+# Оценка качества моделей (ошибка MSE)
+mse1 = mean_squared_error(y1, y1_pred)  # Среднеквадратичная ошибка для первого набора
+mse2 = mean_squared_error(y2, y2_pred)  # Среднеквадратичная ошибка для второго набора
+print(f'MSE для Dataset 1: {mse1:.2f}')  # Вывод ошибки для первого набора
+print(f'MSE для Dataset 2: {mse2:.2f}')  # Вывод ошибки для второго набора
+
+# Построение графиков для визуализации результатов
+plt.figure(figsize=(12, 5))  # Размер графиков
+
+# График для первого набора данных
+plt.subplot(1, 2, 1)  # Первый график в сетке 1x2
+plt.scatter(x1, y1, label='Исходные данные')  # Точки данных
+plt.plot(x1, y1_pred, color='red', label='Линия регрессии')  # Линия регрессии
+plt.xlabel('x')  # Подпись оси X
+plt.ylabel('y')  # Подпись оси Y
+plt.legend()  # Легенда
+plt.title(f'Dataset 1 (MSE = {mse1:.2f})')  # Заголовок графика с ошибкой MSE
+
+# График для второго набора данных
+plt.subplot(1, 2, 2)  # Второй график в сетке 1x2
+plt.scatter(x2, y2, label='Исходные данные')  # Точки данных
+plt.plot(x2, y2_pred, color='green', label='Линия регрессии')  # Линия регрессии
+plt.xlabel('x')  # Подпись оси X
+plt.ylabel('y')  # Подпись оси Y
+plt.legend()  # Легенда
+plt.title(f'Dataset 2 (MSE = {mse2:.2f})')  # Заголовок графика с ошибкой MSE
+
+# Финальная настройка графиков и их отображение
+plt.tight_layout()  # Подгонка расстояний между графиками
+plt.show()  # Отображение графиков
